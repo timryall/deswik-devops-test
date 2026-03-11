@@ -1,7 +1,7 @@
 # .NET Application AWS Migration MVP
 
 ## High Level Overview
-The application runs on ECS-orchestrated containers on EC2s (within an ASG), with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
+The application runs on ECS-orchestrated containers on Fargate, with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
 
 
 ### MVP Final High Level Architecture
@@ -13,8 +13,7 @@ Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migra
 ## Core Infrastructure
 ### Compute and Containers
 - **ECS**: Manages container orchestration — lower operational overhead than EKS, which would be overkill for a single .NET application MVP.
-- **EC2**: Hosts the containers. Chosen over Fargate for greater control and cost-effectiveness given a predictable MVP workload.
-- **ASG**: Manages and scales the EC2 instances underpinning the ECS cluster. Ensures failed instances are automatically replaced, maintaining resilience and availability.
+- **Fargate**: Serverless compute engine that hosts the containers — no EC2 instances or ASGs to manage. Chosen for its simplicity and reduced operational overhead, making it well suited for an MVP.
 ### Networking
 - **VPC**: Isolates all infrastructure, controlling public/private access and inter-resource communication.
 - **Subnets**: Two public and two private subnets across two AZs — minimises exposure per resource (e.g. RDS in private) and enables high availability.
@@ -27,7 +26,7 @@ Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migra
 - **X-Ray**: Distributed tracing to identify latency bottlenecks. ServiceLens integrates traces into CloudWatch for unified observability.
 ### Post MVP
 - Expand from two to three AZs for maximum resilience in production.
-- Run cost-benefit analysis on EC2 vs Fargate for production workloads.
+- Run a cost-benefit analysis on Fargate vs EC2-backed ECS — for higher, more predictable workloads EC2 with an ASG may be more cost-effective.
 - Consider Aurora migration if greater performance and scalability are needed (requires moving from SQL Server to MySQL/PostgreSQL).
 
 ## Data Migration
