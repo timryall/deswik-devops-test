@@ -1,96 +1,52 @@
 # .NET Application AWS Migration MVP
+
 ## High Level Overview
-Our application will be hosted on containers orchestrated by ECS and run on EC2 instances. Images will be stored in ECR. For our database we will use RDS (SQL Server) and migrate data from the legacy database using AWS DMS (Database Migration Service).
-
-All resources will be encapsulated within a VPC and further segmented into subnets spread across multiple AZs to ensure resource security and high availability.
-
-Users can interact with the application by connecting to the domain name, which Route 53 resolves to the IP of an ALB. The ALB distributes incoming traffic across the ECS tasks running in the cluster.
-
-Infrastructure as code and Dockerfiles will be stored in GitHub with CI/CD managed via GitHub Actions. The CI pipeline triggers on a PR to Main — it runs the test suite, builds and pushes the Docker image to ECR, and outputs a Terraform plan. The CD pipeline triggers on merge to Main — it runs Terraform apply and triggers an ECS deployment with the new image.
-
-Observability is instrumented across all components via CloudWatch for logs and metrics, and X-Ray for distributed tracing.
-
+The application runs on ECS-orchestrated containers on EC2, with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
 ### High Level Architecture
 <!-- INSERT IMAGE -->
 
-
 ## Core Infrastructure
 ### Compute and Containers
-- **ECS (Elastic Container Service)**: AWSs simple container orchestration service that manages the running of the application Docker containers. This service allows for easy management (including resource allocation, scaling, restarts etc.) of the containers - at a lower operational overhead than EKS, which would be overkill for a single .NET application MVP.
-
-- **EC2 (Elastic Compute Cloud)**: The compute instances that the containers run on. Chosen over a serverless solution like Fargate as it provides more control and is more cost effective for a predictable MVP workload.
-
+- **ECS**: Manages container orchestration — lower operational overhead than EKS, which would be overkill for a single .NET application MVP.
+- **EC2**: Hosts the containers. Chosen over Fargate for greater control and cost-effectiveness given a predictable MVP workload.
 ### Networking
-- **VPC (Virtual Private Cloud)**: An isolated private network within AWS that houses all our deployed infrastructure, giving us control over what is publicly accessible, what is kept private, and how resources communicate with each other.
-
-- **Subnets**: Used to subdivide the VPC and segment resources into different network zones. We utilise two public subnets and two private subnets, each spanning separate AZs. This allows us to minimise exposure for each resource (e.g. RDS is placed in a private subnet as it should never be directly reachable from the internet) and enables high availability by spreading resources across multiple AZs.
-
-- **ALB (Application Load Balancer)**: A load balancer that sits across both public subnets spanning each AZ, acting as a single entry point for incoming traffic and distributing it across our ECS tasks allowing for horizontal scaling and high availability.
-
-- **Route53**: AWS's DNS (Domain Name System) Service used to translate the domain name of the application to the IP address of the ALB. This means users can use a human friendly readable domain name to access the application and we do not have to worry if the ALB IP address changes. 
-
-
+- **VPC**: Isolates all infrastructure, controlling public/private access and inter-resource communication.
+- **Subnets**: Two public and two private subnets across two AZs — minimises exposure per resource (e.g. RDS in private) and enables high availability.
+- **ALB**: Spans both public subnets, acting as the single entry point and distributing traffic across ECS tasks.
+- **Route 53**: Resolves the application domain to the ALB IP, abstracting any IP changes from users.
 ### Data
-- **RDS (Relational Database Service)**: AWS's managed SQL database service. It is the logical choice as the legacy platform uses a  Microsoft SQL Server database and this would be the most seamless AWS alternative allowing for all existing functionality in the application to work as expected. This managed service is prefered vs self hosting the database on EC2 as AWS manages backups, patching, and Multi-AZ failover and it is simpler to set up and migrate to. Additionally, the primary RDS database will synchronously replicate its data to a standby RDS database (which we can failover to) in a different subnet and AZ for resilience and high availability.
-
-
+- **RDS (SQL Server)**: Direct AWS equivalent of the legacy database, ensuring application compatibility. Preferred over self-hosting on EC2 as AWS manages backups, patching, and failover. A synchronous standby replica in a separate AZ provides resilience.
 ### Observability
-- **CloudWatch**: Used to monitor and alert on metrics and logs for our AWS deployed application. Where possible - each resource would export their logs and metrics to CloudWatch. This will give us insight into the application and allow for quicker recovery and more effective instance tuning / scaling. Dashboards and alerts would also be set up on key metrics - allowing for quicker and more proactive incident response.
-
-- **X-Ray**: Used to monitor distributed traces across our services, allowing us to identify latency bottlenecks and optimise performance. ServiceLens can be used to integrate X-Ray traces directly into CloudWatch for unified observability.
-
-
+- **CloudWatch**: Aggregates logs and metrics across all resources. Dashboards and alerts on key metrics enable proactive incident response.
+- **X-Ray**: Distributed tracing to identify latency bottlenecks. ServiceLens integrates traces into CloudWatch for unified observability.
 ### Post MVP
-- We utilise two AZs in the MVP to demonstrate high availability in a concise manner — however this can be generalised to three AZs to maximise resilience when considering a production deployment.
-- When productionizing this application a cost benifit analysis should be done to consider if the time / money spent in the management of the EC2 servers is worth it and if spending extra on a serverless solution such as fargate may be a better option.
-- If greater performance and scalability is required post-MVP, migrating to Aurora should be considered — noting that this would require moving away from SQL Server to MySQL or PostgreSQL.
+- Expand from two to three AZs for maximum resilience in production.
+- Run cost-benefit analysis on EC2 vs Fargate for production workloads.
+- Consider Aurora migration if greater performance and scalability are needed (requires moving from SQL Server to MySQL/PostgreSQL).
 
-
-
-## Data Migration: 
-In terms of the overall migration we will migrate the application to ECS first while keeping it pointed at the existing database, then migrate the database separately using DMS once the application layer is stable — minimising risk by changing one thing at a time.
-
-For the data migration itself we will use AWS DMS (Database Migration Service) to migrate the data from the legacy SQL Server database to RDS. The migration will be performed in the following steps:
-
-1. **Provision RDS**: Set up the RDS SQL Server instance in the private subnets as per the architecture diagram.
-
-2. **Configure DMS**: Set up a DMS replication instance and configure the source (legacy SQL Server) and target (RDS) endpoints.
-
-3. **Full Load**: DMS performs an initial full copy of all existing data from the legacy database to RDS.
-
-4. **CDC (Change Data Capture)**: While the full load is running, DMS continuously captures any new changes on the source database so no data is lost during migration.
-
-5. **Validate**: Once the full load is complete and CDC is in sync, we validate the data in RDS matches the source database.
-
-6. **Cutover**: Re-point the ECS application layer to RDS and decommission the legacy database. CDC ensures both databases remain in sync up until cutover, minimising downtime.
-
-
+## Data Migration
+The application will be migrated to ECS first, keeping it pointed at the legacy database, then the database migrated separately once the application layer is stable — minimising risk by changing one thing at a time.
+1. **Provision RDS**: Set up the RDS SQL Server instance in private subnets.
+2. **Configure DMS**: Set up a replication instance with source (legacy SQL Server) and target (RDS) endpoints.
+3. **Full Load**: DMS copies all existing data to RDS.
+4. **CDC (Change Data Capture)**: Continuously captures source changes during the full load so no data is lost.
+5. **Validate**: Confirm RDS data matches the source once full load and CDC are in sync.
+6. **Cutover**: Re-point the application to RDS and decommission the legacy database.
 
 ## Security
-### Services Used
-- **ACM (Certificate Manager)**: Provides the SSL/TLS certificate that the ALB uses to handle HTTPS traffic on port 443 from users.
-
-- **Secrets Manager**: Stores sensitive credentials and configurations such as DB passwords and connection information so they are never hardcoded.
-
-- **Security Groups**: ALB, ECS and RDS each have separate least-privilege Security Groups e.g. ALB only accepts inbound on ports 80/443, ECS only accepts traffic from the ALB on port 8080, and RDS only accepts traffic from ECS on port 1433.
-
-- **IAM (Identity and Access Management)**: Least-privilege IAM roles will be assigned to each service e.g. the ECS task role will only have permissions to pull images from ECR, read secrets from Secrets Manager, and write logs to CloudWatch.
-
-
+- **ACM**: Provides the SSL/TLS certificate for HTTPS traffic on the ALB (port 443).
+- **Secrets Manager**: Stores all sensitive credentials (DB passwords, connection strings) — nothing hardcoded.
+- **Security Groups**: Least-privilege per service — ALB accepts 80/443, ECS accepts from ALB on 8080, RDS accepts from ECS on 1433.
+- **IAM**: Least-privilege roles per service — e.g. ECS task role scoped to ECR pull, Secrets Manager read, and CloudWatch write.
 ### Post MVP
-- For the MVP we are using public subnets for the ECS tasks. This was done for cost and simplicity reasons. However for production we would move the ECS tasks to private subnets behind a NAT Gateway for additional security (ensuring nothing external can initiate direct connection).
+- Move ECS tasks from public to private subnets behind a NAT Gateway to prevent direct external connections.
 
-
-## CI/CD Pipeline:
+## CI/CD Pipeline
 ### Tools
-- **ECR (Elastic Container Registry)**: AWS service used to store, manage and deploy docker container images. This was chosen as it has native integrations with the other AWS services used e.g. ECS. It also allows for inbuilt security such as image scanning.
-
-- **Terraform**: IaC (Infrastructure as Code) via Terraform will be used to manage and deploy all AWS resources - ensuring all resources are version controlled, peer reviewed, consistently reproduced, and automatically deployed through CI/CD pipelines.
-
-- **GitHub Actions**: CI/CD tool used to test, build and deploy the container and infrastructure code. GitHub Actions was chosen as a CI/CD tool as it is manged by GitHub and thus does not require a separate tooling server to run (e.g. Jenkins) and pipeline changes will go through the same repository making it simple but effective for a MVP.
-
+- **ECR**: Stores Docker images with native ECS integration and built-in image scanning.
+- **Terraform**: Manages all AWS infrastructure as code — version controlled, peer reviewed, and automatically deployed.
+- **GitHub Actions**: Runs pipelines within the existing repository — no separate tooling server required.
 
 ### Pipelines
-- **CI/Build Pipeline**: Triggers on a PR to Main — it runs a test suite (and required liniting / security checks), builds and pushes the Docker image to ECR, and outputs a Terraform plan. the PR creator and peers can use this information to review and modify the code before it is deployed.
-
-- **CD/Deploy Pipeline**: Triggers on merge to Main (i.e. after PR is approved and merged) — it runs Terraform apply and triggers an ECS deployment with the new image. This will apply any code changes to the live environment. 
+- **CI/Build Pipeline**: Triggers on PR to Main — runs tests/linting/security checks, builds and pushes Docker image to ECR, outputs Terraform plan for review.
+- **CD/Deploy Pipeline**: Triggers on merge to Main — runs Terraform apply and deploys the new image to ECS.
