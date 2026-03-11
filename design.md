@@ -1,7 +1,7 @@
 # .NET Application AWS Migration MVP
 
 ## High Level Overview
-The application runs on ECS-orchestrated containers on EC2, with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
+The application runs on ECS-orchestrated containers on EC2s (within an ASG), with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
 
 
 ### MVP Final High Level Architecture
@@ -14,6 +14,7 @@ Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migra
 ### Compute and Containers
 - **ECS**: Manages container orchestration — lower operational overhead than EKS, which would be overkill for a single .NET application MVP.
 - **EC2**: Hosts the containers. Chosen over Fargate for greater control and cost-effectiveness given a predictable MVP workload.
+- **ASG**: Manages and scales the EC2 instances underpinning the ECS cluster. Ensures failed instances are automatically replaced, maintaining resilience and availability.
 ### Networking
 - **VPC**: Isolates all infrastructure, controlling public/private access and inter-resource communication.
 - **Subnets**: Two public and two private subnets across two AZs — minimises exposure per resource (e.g. RDS in private) and enables high availability.
