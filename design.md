@@ -10,6 +10,8 @@ Infrastructure as code and Dockerfiles will be stored in GitHub with CI/CD manag
 
 Observability is instrumented across all components via CloudWatch for logs and metrics, and X-Ray for distributed tracing.
 
+### High Level Architecture
+<!-- INSERT IMAGE -->
 
 
 ## Core Infrastructure
@@ -29,7 +31,7 @@ Observability is instrumented across all components via CloudWatch for logs and 
 
 
 ### Data
-- **RDS (Relational Database Service)**: AWS's managed SQL database service. It is the logical choice as the legacy platform uses a  Microsoft SQL Server database and this would be the most seamless AWS alterntive allowing for all existing functionality in the application to work as expected. This managed service is prefered vs self hosting the database on EC2 as AWS manages backups, patching, and Multi-AZ failover and it is simpler to set up and migrate to. Additionally, the primary RDS database will synchronously replicate its data to a standby RDS database (which we can failover to) in a different subnet and AZ for resilience and high availability.
+- **RDS (Relational Database Service)**: AWS's managed SQL database service. It is the logical choice as the legacy platform uses a  Microsoft SQL Server database and this would be the most seamless AWS alternative allowing for all existing functionality in the application to work as expected. This managed service is prefered vs self hosting the database on EC2 as AWS manages backups, patching, and Multi-AZ failover and it is simpler to set up and migrate to. Additionally, the primary RDS database will synchronously replicate its data to a standby RDS database (which we can failover to) in a different subnet and AZ for resilience and high availability.
 
 
 ### Observability
@@ -81,11 +83,14 @@ For the data migration itself we will use AWS DMS (Database Migration Service) t
 
 ## CI/CD Pipeline:
 ### Tools
-- **GitHub Actions**
-- **Terraform**
-- **ECR**
+- **ECR (Elastic Container Registry)**: AWS service used to store, manage and deploy docker container images. This was chosen as it has native integrations with the other AWS services used e.g. ECS. It also allows for inbuilt security such as image scanning.
+
+- **Terraform**: IaC (Infrastructure as Code) via Terraform will be used to manage and deploy all AWS resources - ensuring all resources are version controlled, peer reviewed, consistently reproduced, and automatically deployed through CI/CD pipelines.
+
+- **GitHub Actions**: CI/CD tool used to test, build and deploy the container and infrastructure code. GitHub Actions was chosen as a CI/CD tool as it is manged by GitHub and thus does not require a separate tooling server to run (e.g. Jenkins) and pipeline changes will go through the same repository making it simple but effective for a MVP.
+
 
 ### Pipelines
-- **CI/Build Pipeline**
-- **CD/Deploy Pipeline**
+- **CI/Build Pipeline**: Triggers on a PR to Main — it runs a test suite (and required liniting / security checks), builds and pushes the Docker image to ECR, and outputs a Terraform plan. the PR creator and peers can use this information to review and modify the code before it is deployed.
 
+- **CD/Deploy Pipeline**: Triggers on merge to Main (i.e. after PR is approved and merged) — it runs Terraform apply and triggers an ECS deployment with the new image. This will apply any code changes to the live environment. 
