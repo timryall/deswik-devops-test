@@ -2,8 +2,13 @@
 
 ## High Level Overview
 The application runs on ECS-orchestrated containers on EC2, with images stored in ECR and data in RDS (SQL Server). Legacy data is migrated via AWS DMS. All resources sit within a VPC, segmented into public/private subnets across two AZs for security and high availability. Users connect via a domain name, which Route 53 resolves to an ALB that distributes traffic across ECS tasks. Infrastructure and Dockerfiles live in GitHub, with CI/CD via GitHub Actions — CI triggers on PR to Main (tests, builds/pushes image to ECR, outputs Terraform plan), CD triggers on merge (Terraform apply, ECS deployment). Observability is provided by CloudWatch (logs/metrics) and X-Ray (distributed tracing).
-### High Level Architecture
-<!-- INSERT IMAGE -->
+
+
+### MVP Final High Level Architecture
+Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migration architecture are omitted from this diagram for brevity — both are detailed in the sections below.
+
+![MVP Final High Level Architecture](./imgs/mvp_architecture_diagram.png)
+
 
 ## Core Infrastructure
 ### Compute and Containers
