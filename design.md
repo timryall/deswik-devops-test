@@ -29,13 +29,7 @@ Observability is instrumented across all components via CloudWatch for logs and 
 
 
 ### Data
-- **RDS (Relational Database Service)**: AWS's managed SQL database service. It is the logical choice as the legacy platform uses a  Microsoft SQL Server database and this would be the most seamless AWS alterntive allowing for all existing functionality in the application to work as expected. This managed service is prefered vs self hosting the database on EC2 as AWS manages backups, patching, and Multi-AZ failover and it is simpler to set up and migrate to.
-
-<!-- TODO: MENTION MULTI AZ AND DATA REP -->
-
-
-
-
+- **RDS (Relational Database Service)**: AWS's managed SQL database service. It is the logical choice as the legacy platform uses a  Microsoft SQL Server database and this would be the most seamless AWS alterntive allowing for all existing functionality in the application to work as expected. This managed service is prefered vs self hosting the database on EC2 as AWS manages backups, patching, and Multi-AZ failover and it is simpler to set up and migrate to. Additionally, the primary RDS database will synchronously replicate its data to a standby RDS database (which we can failover to) in a different subnet and AZ for resilience and high availability.
 
 
 ### Observability
@@ -52,12 +46,9 @@ Observability is instrumented across all components via CloudWatch for logs and 
 
 
 ## Data Migration: 
-In terms of the overall migration 
+In terms of the overall migration we will migrate the application to ECS first while keeping it pointed at the existing database, then migrate the database separately using DMS once the application layer is stable — minimising risk by changing one thing at a time.
 
-We will use AWS DMS (Database Migration Service) to migrate the data from the legacy SQL Server database to RDS. The migration will be performed in the following steps. 
-
-
-
+For the data migration itself we will use AWS DMS (Database Migration Service) to migrate the data from the legacy SQL Server database to RDS. The migration will be performed in the following steps:
 
 1. **Provision RDS**: Set up the RDS SQL Server instance in the private subnets as per the architecture diagram.
 
@@ -69,10 +60,7 @@ We will use AWS DMS (Database Migration Service) to migrate the data from the le
 
 5. **Validate**: Once the full load is complete and CDC is in sync, we validate the data in RDS matches the source database.
 
-6. **Cutover**: Switch the application connection string to point to RDS and decommission the legacy database. Due to CDC keeping both databases in sync this cutover can be performed with minimal downtime.
-
-
-
+6. **Cutover**: Re-point the ECS application layer to RDS and decommission the legacy database. CDC ensures both databases remain in sync up until cutover, minimising downtime.
 
 
 
@@ -80,7 +68,7 @@ We will use AWS DMS (Database Migration Service) to migrate the data from the le
 ### Services Used
 - **ACM (Certificate Manager)**: Provides the SSL/TLS certificate that the ALB uses to handle HTTPS traffic on port 443 from users.
 
-- **Secrets Manager**: Stores sensitive credentials such as DB passwords so they are never hardcoded.
+- **Secrets Manager**: Stores sensitive credentials and configurations such as DB passwords and connection information so they are never hardcoded.
 
 - **Security Groups**: ALB, ECS and RDS each have separate least-privilege Security Groups e.g. ALB only accepts inbound on ports 80/443, ECS only accepts traffic from the ALB on port 8080, and RDS only accepts traffic from ECS on port 1433.
 
