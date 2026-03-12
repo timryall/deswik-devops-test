@@ -1,11 +1,11 @@
 name: CI/CD Pipeline
 
 on:
-  # CI / Build pipeline runs
+  # CI / Build pipeline runs on PR
   pull_request:
     branches:
       - main
-  # CD / Deploy pipeline runs
+  # CD / Deploy pipeline runs on push to main
   push:
     branches:
       - main
@@ -20,8 +20,9 @@ jobs:
   build-and-push:
     name: Build and Push to ECR
     runs-on: ubuntu-latest
-    # CI pipeline
-    if: github.event_name == 'pull_request'
+    # CI pipeline - Runs on PR and direct pushes to main
+    # NOTE: When productionising, restrict direct pushes to main via branch protection rules
+    # and uncomment: if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
@@ -48,7 +49,8 @@ jobs:
   deploy:
     name: Deploy to ECS
     runs-on: ubuntu-latest
-    # CD pipeline
+    needs: build-and-push
+    # CD pipeline - only runs on push to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
