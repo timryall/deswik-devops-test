@@ -21,8 +21,7 @@ jobs:
   ci:
     name: CI (Test, Build, Push and Plan)
     runs-on: ubuntu-latest
-    # Uncomment this in production once branch protection rules are in place
-    # if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
