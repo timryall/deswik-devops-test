@@ -60,7 +60,7 @@ resource "aws_ecs_service" "app" {
   network_configuration {
     subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups  = [aws_security_group.ecs_tasks.id]
-    assign_public_ip = true  # Required so Fargate can pull from ECR
+    assign_public_ip = true # Required so Fargate can pull from ECR
   }
 
   # Connect ECS Service to ALB

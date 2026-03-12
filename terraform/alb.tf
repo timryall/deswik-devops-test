@@ -1,7 +1,7 @@
 # Application Load Balancer
 resource "aws_lb" "main" {
   name               = "deswik-alb"
-  internal           = false # Public facing
+  internal           = false         # Public facing
   load_balancer_type = "application" # HTTP/HTTPS traffic
   security_groups    = [aws_security_group.alb.id]
   subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
