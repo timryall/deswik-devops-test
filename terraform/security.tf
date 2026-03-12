@@ -59,3 +59,10 @@ resource "aws_cloudwatch_log_group" "flow_logs" {
   name              = "/vpc/deswik-flow-logs"
   retention_in_days = 7
 }
+
+# GuardDuty - AWS threat detection service
+# Monitors for malicious activity and unauthorized behaviour
+# e.g. unusual API calls, potentially compromised instances, etc.
+resource "aws_guardduty_detector" "main" {
+  enable = true
+}
