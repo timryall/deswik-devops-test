@@ -22,7 +22,6 @@ git checkout -b your-branch-name
 ```
 
 ### 2. Make your changes
-
 | Type of change | Files to edit |
 |---|---|
 | App code | `app/server.js` |
@@ -31,7 +30,6 @@ git checkout -b your-branch-name
 | CI/CD Pipelines | `.github/workflows/deploy.yml` |
 
 ### 3. Push and open a PR
-
 ```bash
 git add .
 git commit -m "your commit message"
@@ -41,7 +39,6 @@ git push origin your-branch-name
 Then open a PR on GitHub targeting `main`. Please aim to use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). 
 
 ### 4. CI pipeline runs automatically
-
 On every PR the following checks run:
 - Dockerfile lint
 - Node.js syntax check
@@ -51,26 +48,17 @@ On every PR the following checks run:
 Fix any failures before merging.
 
 ### 5. Merge to deploy
-
 Once CI is green, merge the PR. The CD pipeline will automatically:
 1. Run terraform apply
 2. Force a new ECS deployment to pull the latest Docker image
 
 ### 6. Verify
+Once deployed, verify the application is running at:
 
-Wait 2-3 minutes for the new ECS task to start, then verify:
-
-```bash
-curl http://<alb_dns_name>
-```
-
-The ALB DNS name can be found via:
-- The terraform outputs: `terraform output alb_dns_name` (see terraform apply step of CD pipeline run)
-- AWS Console: **EC2 → Load Balancers → deswik-alb → DNS name**
+http://deswik-alb-471948303.ap-southeast-2.elb.amazonaws.com/
 
 
 ## Observability
-
 | Resource | Where to find it |
 |---|---|
 | CloudWatch Dashboard | AWS Console → CloudWatch → Dashboards → deswik-dashboard |
