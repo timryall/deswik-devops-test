@@ -42,6 +42,7 @@ resource "aws_iam_role" "flow_log_role" {
   })
 }
 
+# Attach a policy to allow the flow logs to write to CloudWatch Logs
 resource "aws_iam_role_policy" "flow_log_policy" {
   name = "deswik-flow-log-policy"
   role = aws_iam_role.flow_log_role.id
