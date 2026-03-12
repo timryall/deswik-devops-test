@@ -78,7 +78,6 @@ jobs:
   cd:
     name: CD (Apply and Deploy)
     runs-on: ubuntu-latest
-    needs: ci # CI should be run before CD
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
