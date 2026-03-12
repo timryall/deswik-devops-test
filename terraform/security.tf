@@ -44,3 +44,18 @@ resource "aws_security_group" "ecs_tasks" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# VPC Flow Logs
+# Captures all network traffic in and out of the VPC
+resource "aws_flow_log" "main" {
+  vpc_id          = aws_vpc.main.id
+  traffic_type    = "ALL"  # Capture ACCEPT, REJECT and all traffic
+  iam_role_arn    = aws_iam_role.flow_log_role.arn
+  log_destination = aws_cloudwatch_log_group.flow_logs.arn
+}
+
+# Log group for VPC flow logs
+resource "aws_cloudwatch_log_group" "flow_logs" {
+  name              = "/vpc/deswik-flow-logs"
+  retention_in_days = 7
+}
