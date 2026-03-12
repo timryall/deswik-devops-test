@@ -7,7 +7,7 @@ The application runs on ECS-orchestrated containers on Fargate, with images stor
 ### MVP Final High Level Architecture
 Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migration architecture are omitted from this diagram for brevity — both are detailed in the sections below.
 
-![MVP Final High Level Architecture](./imgs/mvp_architecture_diagram.png)
+![MVP Final High Level Architecture](./imgs/p1_mvp_architecture_diagram.png)
 
 
 ## Core Infrastructure
