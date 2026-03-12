@@ -7,6 +7,12 @@ resource "aws_vpc" "main" {
 
 # Public Subnets (one per availability zone)
 # We need 2 as the ALB needs at least 2 different AZ's
+#
+# NOTE: In production, ECS tasks should run in private subnets with a NAT Gateway
+# to prevent direct internet exposure. For this demo, tasks run in public subnets
+# to avoid the cost and complexity of a NAT Gateway (~$32/month).
+# The security group on the ECS tasks mitigates the risk by restricting inbound
+# traffic to the ALB only — tasks cannot be reached directly from the internet.
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24" # 256 addresses
