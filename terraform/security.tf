@@ -49,7 +49,7 @@ resource "aws_security_group" "ecs_tasks" {
 # Captures all network traffic in and out of the VPC
 resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
-  traffic_type    = "ALL"  # Capture ACCEPT, REJECT and all traffic
+  traffic_type    = "ALL" # Capture ACCEPT, REJECT and all traffic
   iam_role_arn    = aws_iam_role.flow_log_role.arn
   log_destination = aws_cloudwatch_log_group.flow_logs.arn
 }
