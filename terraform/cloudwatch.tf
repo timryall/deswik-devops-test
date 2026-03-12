@@ -37,6 +37,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Average"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ECS", "CPUUtilization",
               "ClusterName", aws_ecs_cluster.main.name,
@@ -72,6 +73,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Average"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ECS", "MemoryUtilization",
               "ClusterName", aws_ecs_cluster.main.name,
@@ -98,6 +100,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Sum"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ApplicationELB", "RequestCount",
             "LoadBalancer", aws_lb.main.arn_suffix]
@@ -117,6 +120,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Sum"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ApplicationELB", "HTTPCode_ELB_5XX_Count",
             "LoadBalancer", aws_lb.main.arn_suffix]
@@ -136,6 +140,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Average"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ApplicationELB", "TargetResponseTime",
             "LoadBalancer", aws_lb.main.arn_suffix]
@@ -155,6 +160,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           view   = "timeSeries"
           stat   = "Average"
           period = 60
+          region = "ap-southeast-2"
           metrics = [
             ["AWS/ECS", "RunningTaskCount",
               "ClusterName", aws_ecs_cluster.main.name,
@@ -171,10 +177,10 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 24
         height = 6
         properties = {
-          title  = "Container Logs"
-          query  = "SOURCE '/ecs/deswik-app' | fields @timestamp, @message | sort @timestamp desc | limit 50"
-          region = "ap-southeast-2"
-          view   = "table"
+          title   = "Container Logs"
+          query   = "SOURCE '/ecs/deswik-app' | fields @timestamp, @message | sort @timestamp desc | limit 50"
+          region  = "ap-southeast-2"
+          view    = "table"
         }
       },
 
