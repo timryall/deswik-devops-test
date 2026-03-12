@@ -28,6 +28,7 @@ Security services (ACM, Secrets Manager, IAM, Security Groups) and the DMS migra
 - Expand from two to three AZs for maximum resilience in production.
 - Run a cost-benefit analysis on Fargate vs EC2-backed ECS — for higher, more predictable workloads EC2 with an ASG may be more cost-effective.
 - Consider Aurora migration if greater performance and scalability are needed (requires moving from SQL Server to MySQL/PostgreSQL).
+- Move ECS tasks from public to private subnets behind a NAT Gateway to prevent direct external connections.
 
 ## Data Migration
 To minimise risk, the application will be migrated to ECS first while keeping it pointed at the legacy database. Once the application layer is stable, the database will be migrated separately — changing one thing at a time. The migration will follow these steps:
@@ -42,10 +43,8 @@ To minimise risk, the application will be migrated to ECS first while keeping it
 - **ACM**: Provides the SSL/TLS certificate for HTTPS traffic on the ALB (port 443). The ALB will also have a HTTP→HTTPS redirect rule on port 80 so all traffic is forced to TLS — ACM alone does not enforce this.
 - **Secrets Manager**: Stores all sensitive credentials (DB passwords, connection strings) — nothing hardcoded. Chosen over SSM Parameter Store because it supports automatic secret rotation, which is important for database credentials.
 - **Security Groups**: Least-privilege per service — ALB accepts 80/443, ECS accepts only from the ALB security group on 8080, RDS accepts only from the ECS security group on 1433. This means even if something else inside the VPC were compromised, it could not reach the database.
-- **IAM**: Least-privilege roles per service — e.g. ECS task role scoped to `ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:BatchGetImage`, `ecr:GetDownloadUrlForLayer`, `secretsmanager:GetSecretValue`, `logs:CreateLogStream`, and `logs:PutLogEvents`. No broader permissions granted.
+- **IAM**: Least-privilege roles per service — e.g. ECS task role scoped to pull images from ECR, pull secrets from Secret Manager and push logs/metrics/traces to CloudWatch/X-Ray.
 - **KMS**: RDS encryption at rest is enabled so data stored on disk is unreadable without the KMS key — this protects the underlying storage and any snapshots if they were ever accessed directly.
-### Post MVP
-- Move ECS tasks from public to private subnets behind a NAT Gateway to prevent direct external connections.
 
 ## CI/CD Pipeline
 ### Tools
