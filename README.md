@@ -27,7 +27,7 @@ git checkout -b your-branch-name
 | App code | `app/server.js` |
 | Container | `app/Dockerfile` |
 | Infrastructure | `terraform/*.tf` |
-| CI/CD Pipelines | `.github/workflows/deploy.yml` |
+| CI/CD Pipeline | `.github/workflows/deploy.yml` |
 
 ### 3. Push and open a PR
 ```bash
@@ -58,18 +58,8 @@ Once deployed, verify the application is running at:
 http://deswik-alb-471948303.ap-southeast-2.elb.amazonaws.com/
 
 
-## Observability
-| Resource | Where to find it |
-|---|---|
-| CloudWatch Dashboard | AWS Console → CloudWatch → Dashboards → deswik-dashboard |
-| Container Logs | AWS Console → CloudWatch → Log Groups → /ecs/deswik-app |
-| VPC Flow Logs | AWS Console → CloudWatch → Log Groups → /vpc/deswik-flow-logs |
-| CPU Alarm | AWS Console → CloudWatch → Alarms → deswik-ecs-cpu-high |
-| GuardDuty Findings | AWS Console → GuardDuty → Findings |
-
-
 ## Fresh Deployment
-To deploy this from scratch into your own AWS and GitHub account.
+Follow these steps to deploy from scratch into your own AWS and GitHub account.
 
 ### Prerequisites
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured
@@ -124,7 +114,7 @@ terraform apply
 
 Once complete, note the `alb_dns_name` output — this is the URL of your deployed application.
 
-(NOTE: this step can be substituted by just pushing a dummy commit to main forcing the CD pipeline to run and deploy all required resources. And then acquiring the ALB DNS name from the AWS console)
+Alternatively, pushing a commit directly to main will trigger the CD pipeline to deploy all infrastructure automatically. The ALB DNS name can then be found in the AWS Console under EC2 → Load Balancers.
 
 ### 5. Push to main to trigger deployment
 From this point, all deployments are handled automatically by the CI/CD pipeline. Open a PR to make changes and merge to deploy:
@@ -133,3 +123,13 @@ git push origin main
 ```
 
 The CD pipeline will run `terraform apply` and deploy the latest Docker image to ECS on every merge to main.
+
+
+## Observability
+| Resource | Where to find it |
+|---|---|
+| CloudWatch Dashboard | AWS Console → CloudWatch → Dashboards → deswik-dashboard |
+| Container Logs | AWS Console → CloudWatch → Log Groups → /ecs/deswik-app |
+| VPC Flow Logs | AWS Console → CloudWatch → Log Groups → /vpc/deswik-flow-logs |
+| CPU Alarm | AWS Console → CloudWatch → Alarms → deswik-ecs-cpu-high |
+| GuardDuty Findings | AWS Console → GuardDuty → Findings |
