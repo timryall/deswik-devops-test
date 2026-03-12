@@ -106,13 +106,19 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      
-      - name: Retag and push latest
+
+      # NOTE: We rebuild and push the image again in CD to ensure we have the latest image with the correct tag, 
+      # as the CI job only pushes the image with the commit SHA tag. In a real-world scenario, we might want to
+      # optimize this by sharing the built image between CI and CD or using a more robust tagging strategy.
+      - name: Build and push Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker build --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            ./app
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: Deploy to ECS
