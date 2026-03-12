@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.write('Good afternoon World. I hope you are well. This is a simple Node.js server.\n');
+  res.write('Hello World! This is a simple Node.js server!\n');
   res.end('Hello Deswik!\n');
 });
 
