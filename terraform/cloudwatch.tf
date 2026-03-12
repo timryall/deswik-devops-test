@@ -177,10 +177,10 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 24
         height = 6
         properties = {
-          title   = "Container Logs"
-          query   = "SOURCE '/ecs/deswik-app' | fields @timestamp, @message | sort @timestamp desc | limit 50"
-          region  = "ap-southeast-2"
-          view    = "table"
+          title  = "Container Logs"
+          query  = "SOURCE '/ecs/deswik-app' | fields @timestamp, @message | sort @timestamp desc | limit 50"
+          region = "ap-southeast-2"
+          view   = "table"
         }
       },
 
