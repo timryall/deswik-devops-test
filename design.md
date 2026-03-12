@@ -39,10 +39,12 @@ The application will be migrated to ECS first, keeping it pointed at the legacy 
 6. **Cutover**: Re-point the application to RDS and decommission the legacy database.
 
 ## Security
-- **ACM**: Provides the SSL/TLS certificate for HTTPS traffic on the ALB (port 443).
-- **Secrets Manager**: Stores all sensitive credentials (DB passwords, connection strings) — nothing hardcoded.
-- **Security Groups**: Least-privilege per service — ALB accepts 80/443, ECS accepts from ALB on 8080, RDS accepts from ECS on 1433.
-- **IAM**: Least-privilege roles per service — e.g. ECS task role scoped to ECR pull, Secrets Manager read, and CloudWatch write.
+- **ACM**: Provides the SSL/TLS certificate for HTTPS traffic on the ALB (port 443). The ALB also has a HTTP→HTTPS redirect rule on port 80 so all traffic is forced to TLS — ACM alone does not enforce this.
+- **Secrets Manager**: Stores all sensitive credentials (DB passwords, connection strings) — nothing hardcoded. Chosen over SSM Parameter Store because it supports automatic secret rotation, which is important for database credentials.
+- **Security Groups**: Least-privilege per service — ALB accepts 80/443, ECS accepts only from the ALB security group on 8080, RDS accepts only from the ECS security group on 1433. This means even if something else inside the VPC were compromised, it could not reach the database.
+- **IAM**: Least-privilege roles per service — e.g. ECS task role scoped to `ecr:GetAuthorizationToken`, `ecr:BatchGetImage`, `ecr:GetDownloadUrlForLayer`, `secretsmanager:GetSecretValue`, and `logs:CreateLogStream`/`logs:PutLogEvents`. No broader permissions granted.
+- **KMS**: RDS encryption at rest is enabled so data stored on disk is unreadable without the KMS key — this protects the underlying storage and any snapshots if they were ever accessed directly.
+- **ECR Image Scanning**: Enabled on push to automatically detect known vulnerabilities in the container image before deployment.
 ### Post MVP
 - Move ECS tasks from public to private subnets behind a NAT Gateway to prevent direct external connections.
 
